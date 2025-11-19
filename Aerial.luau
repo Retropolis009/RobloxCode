@@ -6,16 +6,16 @@ local AirTraversal = {}
 
 -- Settings
 local SETTINGS = {
-	SERVER_TICK = 0.05,
-	FLY_SPEED = 12,
-	WAYPOINT_THRESHOLD = 5,
-	REPATH_MIN = 4,
-	REPATH_MAX = 8,
-	IDLE_CHANCE = 0.3,
-	POST_IDLE_DURATION = 2,
-	HOVER_AMPLITUDE = 2,
-	HOVER_SPEED = 3,
-	RANDOM_OSC_SCALE = 0.5
+	servertick = 0.05,
+	flyspeed = 12,
+	waypointthreshold = 5,
+	repathmin = 4,
+	repathmax = 8,
+	idlechance = 0.3,
+	postidleduration = 2,
+	hoveramplitude = 2,
+	hoverspeed = 3,
+	randomoscscale = 0.5
 }
 
 -- States
@@ -90,7 +90,7 @@ local function initializeNpcState(npc)
 		CurrentTarget = nil,
 		ReachedTarget = true,
 		LastRepath = os.clock(),
-		NextRepath = math.random(SETTINGS.REPATH_MIN, SETTINGS.REPATH_MAX),
+		NextRepath = math.random(SETTINGS.repathmin, SETTINGS.repathmax),
 		IsIdling = false,
 		IdleUntil = 0,
 		CanIdle = true,
@@ -106,8 +106,8 @@ end
 -- Helper for Idle
 local function getOscillation(t, seed, amplitude)
 	local noise = math.noise(t * 0.7, seed * 0.13)
-	local sine = math.sin(t * SETTINGS.HOVER_SPEED + seed) * 0.5
-	return (sine + noise * SETTINGS.RANDOM_OSC_SCALE) * amplitude
+	local sine = math.sin(t * SETTINGS.hoverspeed + seed) * 0.5
+	return (sine + noise * SETTINGS.randomoscscale) * amplitude
 end
 
 -- Update pets per frame
@@ -130,7 +130,7 @@ local function updatePets()
 
 			-- Idling
 			if state.IsIdling and now < state.IdleUntil then
-				bv.Velocity = Vector3.new(0, getOscillation(elapsed, state.Seed, SETTINGS.HOVER_AMPLITUDE), 0)
+				bv.Velocity = Vector3.new(0, getOscillation(elapsed, state.Seed, SETTINGS.hoveramplitude), 0)
 				bg.CFrame = CFrame.lookAt(root.Position, root.Position + (state.LastFacingDir or Vector3.new(0,0,1)))
 				npc:SetAttribute("State", "Idle")
 				continue
@@ -145,7 +145,7 @@ local function updatePets()
 				state.LastTarget = state.CurrentTarget
 				state.ReachedTarget = false
 				state.LastRepath = now
-				state.NextRepath = math.random(SETTINGS.REPATH_MIN, SETTINGS.REPATH_MAX)
+				state.NextRepath = math.random(SETTINGS.repathmin, SETTINGS.repathmax)
 			end
 
 			-- Movement
@@ -153,10 +153,10 @@ local function updatePets()
 			if state.CurrentTarget and not state.ReachedTarget then
 				local dir = state.CurrentTarget - root.Position
 				local distance = dir.Magnitude
-				if distance > SETTINGS.WAYPOINT_THRESHOLD then
+				if distance > SETTINGS.waypointthreshold then
 					isMoving = true
-					local desiredVelocity = dir.Unit * SETTINGS.FLY_SPEED
-					desiredVelocity += Vector3.new(0, getOscillation(elapsed, state.Seed, SETTINGS.HOVER_AMPLITUDE * 0.4), 0)
+					local desiredVelocity = dir.Unit * SETTINGS.flyspeed
+					desiredVelocity += Vector3.new(0, getOscillation(elapsed, state.Seed, SETTINGS.hoveramplitude * 0.4), 0)
 					bv.Velocity = bv.Velocity:Lerp(desiredVelocity, 0.2)
 
 					state.LastFacingDir = dir.Unit
@@ -169,9 +169,9 @@ local function updatePets()
 
 			-- Post-target idle
 			if state.ReachedTarget and state.CanIdle and not state.IsIdling then
-				if math.random() < SETTINGS.IDLE_CHANCE then
+				if math.random() < SETTINGS.idlechance then
 					state.IsIdling = true
-					state.IdleUntil = now + SETTINGS.POST_IDLE_DURATION
+					state.IdleUntil = now + SETTINGS.postidleduration
 					state.IdleBaseY = root.Position.Y
 				end
 			end
